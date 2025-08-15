@@ -3,13 +3,27 @@
 {% block content %}
 <div class="w-full max-w-3xl mx-auto space-y-8">
     <div class="text-center p-6 md:p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
-        <h1 class="text-lg md:text-2xl font-normal text-gray-400 mb-6">距离 2025年12月20日 08:30 还有</h1>
+        <h1 class="text-lg md:text-2xl font-normal text-gray-400 mb-6">距离 2025年12月20日 还有</h1>
         <div>
-            <div class="text-center mb-6"><div class="flex justify-center items-baseline"><p id="days" class="text-7xl md:text-9xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ days }}</p><p class="text-2xl md:text-4xl font-bold text-gray-200 ml-2 md:ml-3">天</p></div></div>
+            <div class="text-center mb-6">
+                <div class="flex justify-center items-baseline">
+                    <p id="days" class="text-7xl md:text-9xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ days }}</p>
+                    <p class="text-2xl md:text-4xl font-bold text-gray-200 ml-2 md:ml-3">天</p>
+                </div>
+            </div>
             <div class="flex justify-center items-baseline space-x-4 md:space-x-8">
-                <div class="flex items-baseline"><p id="hours" class="text-5xl md:text-7xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ hours }}</p><p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">时</p></div>
-                <div class="flex items-baseline"><p id="minutes" class="text-5xl md:text-7xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ minutes }}</p><p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">分</p></div>
-                <div class="flex items-baseline"><p id="seconds" class="text-5xl md:text-7xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ seconds }}</p><p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">秒</p></div>
+                <div class="flex items-baseline">
+                    <p id="hours" class="text-5xl md:text-7xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ hours }}</p>
+                    <p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">时</p>
+                </div>
+                <div class="flex items-baseline">
+                    <p id="minutes" class="text-5xl md:text-7xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ minutes }}</p>
+                    <p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">分</p>
+                </div>
+                <div class="flex items-baseline">
+                    <p id="seconds" class="text-5xl md:text-7xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ seconds }}</p>
+                    <p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">秒</p>
+                </div>
             </div>
         </div>
         <div class="mt-8 pt-6 border-t border-gray-600">
@@ -20,25 +34,60 @@
     </div>
 
     <div class="text-center p-6 md:p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
-        <h2 class="text-2xl font-bold text-white mb-4">学习计时器</h2>
-        <div id="current-session-display" class="hidden mb-4 p-4 bg-gray-700 rounded-lg">
+        <h2 class="text-2xl font-bold text-white mb-6">学习计时器</h2>
+
+        <div id="current-session-display" class="hidden mb-6 p-4 bg-gray-700 rounded-lg">
             <p class="text-gray-300">正在学习: <span id="current-subject" class="font-bold text-cyan-400"></span></p>
             <p id="session-timer" class="text-4xl font-bold text-white tabular-nums-font mt-2">00:00:00</p>
+            <p id="session-status-text" class="text-sm text-yellow-400 mt-1"></p>
         </div>
+
         <div id="start-controls">
-            <input type="text" id="subject-input" placeholder="输入学习科目" class="w-full md:w-1/2 bg-gray-700 text-white px-4 py-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition">
-            <button id="start-btn" class="w-full md:w-auto mt-4 md:mt-0 md:ml-4 bg-cyan-500 hover:bg-cyan-600 text-white font-bold px-6 py-3 rounded-lg transition-transform transform hover:scale-105">开始学习</button>
+            <div class="p-4 bg-gray-700/50 rounded-lg mb-4">
+                <p class="text-gray-400">当前选择科目</p>
+                <p id="selected-subject-display" class="text-2xl font-bold text-white mt-1">无</p>
+            </div>
+            <div class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-4">
+                <button id="manage-subjects-btn" class="w-full md:w-auto bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded-lg transition">管理科目</button>
+                <button id="select-subject-btn" class="w-full md:w-auto bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded-lg transition">选择科目</button>
+                <button id="start-btn" class="w-full md:w-auto bg-cyan-500 hover:bg-cyan-600 text-white font-bold px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">开始学习</button>
+            </div>
         </div>
-        <div id="stop-controls" class="hidden">
-             <button id="stop-btn" class="w-full md:w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-3 rounded-lg transition-transform transform hover:scale-105">结束学习</button>
+        
+        <div id="stop-controls" class="hidden space-x-4">
+             <button id="pause-resume-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-6 py-3 rounded-lg transition-transform transform hover:scale-105">暂停</button>
+             <button id="stop-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-lg transition-transform transform hover:scale-105">结束学习</button>
         </div>
     </div>
 </div>
 
+<div id="select-subject-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+    <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-md border border-gray-700">
+        <h3 class="text-xl font-bold text-white mb-4">选择一个科目</h3>
+        <div id="subject-selection-list" class="space-y-2 max-h-60 overflow-y-auto">
+            </div>
+        <button id="close-select-modal-btn" class="mt-6 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition">关闭</button>
+    </div>
+</div>
+
+<div id="manage-subjects-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+    <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-md border border-gray-700">
+        <h3 class="text-xl font-bold text-white mb-4">管理我的科目</h3>
+        <div id="subject-management-list" class="space-y-2 max-h-60 overflow-y-auto mb-4">
+            </div>
+        <div class="flex space-x-2 border-t border-gray-700 pt-4">
+            <input type="text" id="new-subject-name" placeholder="输入新科目名称" class="flex-grow bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+            <button id="add-subject-btn" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold px-4 py-2 rounded-lg transition">添加</button>
+        </div>
+        <button id="close-manage-modal-btn" class="mt-6 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition">完成</button>
+    </div>
+</div>
+
+
 <script>
-// --- [倒计时JS，与之前版本相同，此处省略以节约篇幅] ---
-const initialTotalEffectiveSeconds = {{ total_seconds|default(0)|tojson }};
-const startTime = Date.now();
+// --- 倒计时JS ---
+const initialTotalEffectiveSeconds = {{ total_seconds }};
+const serverLoadTime = Date.now();
 const daysEl = document.getElementById('days');
 const hoursEl = document.getElementById('hours');
 const minutesEl = document.getElementById('minutes');
@@ -46,9 +95,8 @@ const secondsEl = document.getElementById('seconds');
 const totalEffectiveHoursEl = document.getElementById('total-effective-hours');
 const EFFECTIVE_HOURS_PER_DAY = 14;
 const SECONDS_IN_EFFECTIVE_DAY = EFFECTIVE_HOURS_PER_DAY * 3600;
-
 function updateCountdown() {
-    const elapsedTimeInSeconds = Math.round((Date.now() - startTime) / 1000);
+    const elapsedTimeInSeconds = Math.round((Date.now() - serverLoadTime) / 1000);
     let totalEffectiveSeconds = initialTotalEffectiveSeconds - elapsedTimeInSeconds;
     if (totalEffectiveSeconds < 0) totalEffectiveSeconds = 0;
     let remainingSeconds = totalEffectiveSeconds;
@@ -69,127 +117,217 @@ function updateCountdown() {
 const countdownInterval = setInterval(updateCountdown, 1000);
 updateCountdown();
 
-// --- NEW/UPDATED: Study Timer Logic ---
-
-const subjectInput = document.getElementById('subject-input');
-const startBtn = document.getElementById('start-btn');
-const stopBtn = document.getElementById('stop-btn');
-const startControls = document.getElementById('start-controls');
-const stopControls = document.getElementById('stop-controls');
-const currentSessionDisplay = document.getElementById('current-session-display');
-const currentSubjectEl = document.getElementById('current-subject');
-const sessionTimerEl = document.getElementById('session-timer');
-
-let sessionInterval = null;
-let isTimerRunning = false;
-{# Render active session data safely: avoid using tojson on objects that may contain datetimes #}
-{% if active_session_data %}
-let activeSessionData = {
-    subject: {{ active_session_data.subject|tojson }},
-    start_time_utc: {{ active_session_data.start_time_utc|string|tojson }}
-};
-{% else %}
-let activeSessionData = null;
-{% endif %}
-
-function formatTime(seconds) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
-}
-
-function startUiTimer(subject, startTimeUtc) {
-    const sessionStartTime = new Date(startTimeUtc);
-    currentSubjectEl.textContent = subject;
-    startControls.classList.add('hidden');
-    stopControls.classList.remove('hidden');
-    currentSessionDisplay.classList.remove('hidden');
-    isTimerRunning = true;
-
-    if (sessionInterval) clearInterval(sessionInterval);
-    sessionInterval = setInterval(() => {
-        const elapsedSeconds = Math.round((Date.now() - sessionStartTime.getTime()) / 1000);
-        sessionTimerEl.textContent = formatTime(elapsedSeconds);
-    }, 1000);
-}
-
-startBtn.addEventListener('click', async () => {
-    const subject = subjectInput.value.trim();
-    if (!subject) {
-        alert('请输入学习科目！');
-        return;
-    }
-
-    const response = await fetch("{{ url_for('routes.start_session') }}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject: subject })
-    });
-    
-    if (response.ok) {
-        const data = await response.json();
-        startUiTimer(data.session.subject, data.session.start_time_utc);
-    } else {
-        let errText = '';
-        try {
-            const errData = await response.json();
-            errText = errData.error || JSON.stringify(errData);
-        } catch (e) {
-            try {
-                errText = await response.text();
-            } catch (e2) {
-                errText = response.status + ' ' + response.statusText;
-            }
-        }
-        alert('启动失败: ' + errText);
-    }
-});
-
-stopBtn.addEventListener('click', async () => {
-    const response = await fetch("{{ url_for('routes.stop_session') }}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    });
-    
-    if (response.ok) {
-        clearInterval(sessionInterval);
-        isTimerRunning = false;
-        subjectInput.value = '';
-        startControls.classList.remove('hidden');
-        stopControls.classList.add('hidden');
-        currentSessionDisplay.classList.add('hidden');
-        alert('学习会话已保存！');
-        activeSessionData = null;
-    } else {
-        let errText = '';
-        try {
-            const errData = await response.json();
-            errText = errData.error || JSON.stringify(errData);
-        } catch (e) {
-            try {
-                errText = await response.text();
-            } catch (e2) {
-                errText = response.status + ' ' + response.statusText;
-            }
-        }
-        alert('结束失败: ' + errText + '（请刷新页面重试）');
-    }
-});
-
-// NEW: Warn user on page exit if timer is running
-window.addEventListener('beforeunload', (event) => {
-    if (isTimerRunning) {
-        event.preventDefault();
-        event.returnValue = '';
-    }
-});
-
-// NEW: Check for active session on page load
+// --- 学习计时器JS ---
 document.addEventListener('DOMContentLoaded', () => {
-    if (activeSessionData) {
-        startUiTimer(activeSessionData.subject, activeSessionData.start_time_utc);
-    }
+    // 全局状态
+    let subjects = {{ subjects | tojson }};
+    let activeSessionData = {{ active_session_data | tojson }};
+    let selectedSubject = null;
+    let sessionInterval = null;
+
+    // 获取所有DOM元素
+    const dom = {
+        startControls: document.getElementById('start-controls'),
+        stopControls: document.getElementById('stop-controls'),
+        currentSessionDisplay: document.getElementById('current-session-display'),
+        selectedSubjectDisplay: document.getElementById('selected-subject-display'),
+        currentSubject: document.getElementById('current-subject'),
+        sessionTimer: document.getElementById('session-timer'),
+        sessionStatusText: document.getElementById('session-status-text'),
+        startBtn: document.getElementById('start-btn'),
+        stopBtn: document.getElementById('stop-btn'),
+        pauseResumeBtn: document.getElementById('pause-resume-btn'),
+        selectSubjectBtn: document.getElementById('select-subject-btn'),
+        manageSubjectsBtn: document.getElementById('manage-subjects-btn'),
+        selectModal: document.getElementById('select-subject-modal'),
+        manageModal: document.getElementById('manage-subjects-modal'),
+        closeSelectModalBtn: document.getElementById('close-select-modal-btn'),
+        closeManageModalBtn: document.getElementById('close-manage-modal-btn'),
+        subjectSelectionList: document.getElementById('subject-selection-list'),
+        subjectManagementList: document.getElementById('subject-management-list'),
+        newSubjectNameInput: document.getElementById('new-subject-name'),
+        addSubjectBtn: document.getElementById('add-subject-btn'),
+    };
+
+    // --- 辅助函数 ---
+    const formatTime = (seconds) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+    };
+
+    const apiCall = async (url, method = 'GET', body = null) => {
+        try {
+            const options = {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+            };
+            if (body) options.body = JSON.stringify(body);
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || '操作失败');
+            }
+            return response.status !== 204 ? await response.json() : true;
+        } catch (error) {
+            alert(error.message);
+            return null;
+        }
+    };
+    
+    // --- UI渲染函数 ---
+    const renderSubjectLists = () => {
+        dom.subjectSelectionList.innerHTML = '';
+        dom.subjectManagementList.innerHTML = '';
+        if (subjects.length === 0) {
+            dom.subjectSelectionList.innerHTML = `<p class="text-gray-400 text-center">请先在“管理科目”中添加科目</p>`;
+        }
+        subjects.forEach(subject => {
+            const selectItem = document.createElement('button');
+            selectItem.className = 'w-full text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition';
+            selectItem.textContent = subject.name;
+            selectItem.dataset.id = subject.id;
+            dom.subjectSelectionList.appendChild(selectItem);
+
+            const manageItem = document.createElement('div');
+            manageItem.className = 'flex items-center justify-between p-2 bg-gray-700 rounded-lg';
+            manageItem.innerHTML = `
+                <span class="text-white">${subject.name}</span>
+                <div class="space-x-2">
+                    <button data-action="rename" data-id="${subject.id}" class="text-yellow-400 hover:text-yellow-300 text-sm">重命名</button>
+                    <button data-action="delete" data-id="${subject.id}" class="text-orange-400 hover:text-orange-300 text-sm">删除</button>
+                </div>
+            `;
+            dom.subjectManagementList.appendChild(manageItem);
+        });
+    };
+
+    const updateMainUI = () => {
+        if (activeSessionData) {
+            dom.startControls.classList.add('hidden');
+            dom.stopControls.classList.remove('hidden');
+            dom.currentSessionDisplay.classList.remove('hidden');
+            dom.currentSubject.textContent = activeSessionData.subject.name;
+            
+            if (activeSessionData.status === 'active') {
+                dom.sessionStatusText.textContent = '';
+                dom.pauseResumeBtn.textContent = '暂停';
+                const sessionStartTime = new Date(activeSessionData.last_start_time_utc);
+                const baseSeconds = activeSessionData.accumulated_seconds;
+                if (sessionInterval) clearInterval(sessionInterval);
+                sessionInterval = setInterval(() => {
+                    const elapsed = Math.round((Date.now() - sessionStartTime.getTime()) / 1000);
+                    dom.sessionTimer.textContent = formatTime(baseSeconds + elapsed);
+                }, 1000);
+            } else { // paused
+                clearInterval(sessionInterval);
+                dom.sessionTimer.textContent = formatTime(activeSessionData.accumulated_seconds);
+                dom.sessionStatusText.textContent = '已暂停';
+                dom.pauseResumeBtn.textContent = '继续';
+            }
+        } else {
+            clearInterval(sessionInterval);
+            dom.startControls.classList.remove('hidden');
+            dom.stopControls.classList.add('hidden');
+            dom.currentSessionDisplay.classList.add('hidden');
+            dom.selectedSubjectDisplay.textContent = selectedSubject ? selectedSubject.name : '无';
+            dom.startBtn.disabled = !selectedSubject;
+        }
+    };
+
+    // --- 事件处理函数 ---
+    const fetchAndRenderSubjects = async () => {
+        const fetchedSubjects = await apiCall("{{ url_for('routes.get_subjects') }}");
+        if (fetchedSubjects) {
+            subjects = fetchedSubjects;
+            renderSubjectLists();
+        }
+    };
+
+    // --- 事件监听 ---
+    dom.selectSubjectBtn.addEventListener('click', () => dom.selectModal.classList.remove('hidden'));
+    dom.closeSelectModalBtn.addEventListener('click', () => dom.selectModal.classList.add('hidden'));
+    dom.manageSubjectsBtn.addEventListener('click', () => dom.manageModal.classList.remove('hidden'));
+    dom.closeManageModalBtn.addEventListener('click', () => dom.manageModal.classList.add('hidden'));
+
+    dom.subjectSelectionList.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            const subjectId = parseInt(e.target.dataset.id, 10);
+            selectedSubject = subjects.find(s => s.id === subjectId);
+            updateMainUI();
+            dom.selectModal.classList.add('hidden');
+        }
+    });
+
+    dom.addSubjectBtn.addEventListener('click', async () => {
+        const name = dom.newSubjectNameInput.value.trim();
+        if (!name) return;
+        const newSubject = await apiCall("{{ url_for('routes.add_subject') }}", 'POST', { name });
+        if (newSubject) {
+            dom.newSubjectNameInput.value = '';
+            await fetchAndRenderSubjects();
+        }
+    });
+
+    dom.subjectManagementList.addEventListener('click', async (e) => {
+        const target = e.target;
+        const action = target.dataset.action;
+        const id = parseInt(target.dataset.id, 10);
+
+        if (action === 'rename') {
+            const subject = subjects.find(s => s.id === id);
+            const newName = prompt('输入新的科目名称:', subject.name);
+            if (newName && newName.trim() !== '' && newName.trim() !== subject.name) {
+                const result = await apiCall(`/update_subject/${id}`, 'POST', { name: newName.trim() });
+                if (result) await fetchAndRenderSubjects();
+            }
+        } else if (action === 'delete') {
+            if (confirm('确定要删除这个科目吗？如果该科目下有学习记录，将无法删除。')) {
+                const result = await apiCall(`/delete_subject/${id}`, 'POST');
+                if (result) await fetchAndRenderSubjects();
+            }
+        }
+    });
+
+    dom.startBtn.addEventListener('click', async () => {
+        if (!selectedSubject) { alert('请先选择一个科目'); return; }
+        const result = await apiCall("{{ url_for('routes.start_session') }}", 'POST', { subject_id: selectedSubject.id });
+        if (result) {
+            activeSessionData = result.session;
+            updateMainUI();
+        }
+    });
+    
+    dom.pauseResumeBtn.addEventListener('click', async () => {
+        const result = await apiCall("{{ url_for('routes.toggle_pause_session') }}", 'POST');
+        if (result) {
+            activeSessionData = result.session;
+            updateMainUI();
+        }
+    });
+
+    dom.stopBtn.addEventListener('click', async () => {
+        if (!confirm('确定要结束本次学习吗？')) return;
+        const result = await apiCall("{{ url_for('routes.stop_session') }}", 'POST');
+        if (result) {
+            activeSessionData = null;
+            selectedSubject = null;
+            updateMainUI();
+            alert('学习会话已保存！');
+        }
+    });
+    
+    window.addEventListener('beforeunload', (event) => {
+        if (activeSessionData && activeSessionData.status === 'active') {
+            event.preventDefault();
+            event.returnValue = '您有正在进行的学习计时，确定要离开吗？';
+        }
+    });
+
+    // 初始化
+    renderSubjectLists();
+    updateMainUI();
 });
 </script>
 {% endblock %}
