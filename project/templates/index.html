@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="w-full max-w-3xl mx-auto space-y-8">
+    <div class="text-center p-6 md:p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
+        <h1 class="text-lg md:text-2xl font-normal text-gray-400 mb-6">距离 2025年12月20日 08:30 还有</h1>
+        <div>
+            <div class="text-center mb-6"><div class="flex justify-center items-baseline"><p id="days" class="text-7xl md:text-9xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ days }}</p><p class="text-2xl md:text-4xl font-bold text-gray-200 ml-2 md:ml-3">天</p></div></div>
+            <div class="flex justify-center items-baseline space-x-4 md:space-x-8">
+                <div class="flex items-baseline"><p id="hours" class="text-5xl md:text-7xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ hours }}</p><p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">时</p></div>
+                <div class="flex items-baseline"><p id="minutes" class="text-5xl md:text-7xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ minutes }}</p><p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">分</p></div>
+                <div class="flex items-baseline"><p id="seconds" class="text-5xl md:text-7xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ seconds }}</p><p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">秒</p></div>
+            </div>
+        </div>
+        <div class="mt-8 pt-6 border-t border-gray-600">
+             <p class="text-base md:text-lg font-normal text-gray-400">最多有效学习时长</p>
+             <p class="text-3xl md:text-4xl font-bold text-white mt-2 tabular-nums-font"><span id="total-effective-hours">{{ total_effective_hours }}</span><span class="text-xl md:text-2xl font-normal text-gray-300">小时</span></p>
+        </div>
+        <p class="text-xs md:text-sm text-gray-500 mt-8">(按每日有效时间 08:00 - 22:00 计算)</p>
+    </div>
+
+    <div class="text-center p-6 md:p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
+        <h2 class="text-2xl font-bold text-white mb-4">学习计时器</h2>
+        <div id="current-session-display" class="hidden mb-4 p-4 bg-gray-700 rounded-lg">
+            <p class="text-gray-300">正在学习: <span id="current-subject" class="font-bold text-cyan-400"></span></p>
+            <p id="session-timer" class="text-4xl font-bold text-white tabular-nums-font mt-2">00:00:00</p>
+        </div>
+        <div id="start-controls">
+            <input type="text" id="subject-input" placeholder="输入学习科目" class="w-full md:w-1/2 bg-gray-700 text-white px-4 py-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition">
+            <button id="start-btn" class="w-full md:w-auto mt-4 md:mt-0 md:ml-4 bg-cyan-500 hover:bg-cyan-600 text-white font-bold px-6 py-3 rounded-lg transition-transform transform hover:scale-105">开始学习</button>
+        </div>
+        <div id="stop-controls" class="hidden">
+             <button id="stop-btn" class="w-full md:w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-3 rounded-lg transition-transform transform hover:scale-105">结束学习</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- [倒计时JS，与之前版本相同，此处省略以节约篇幅] ---
+const initialTotalEffectiveSeconds = {{ total_seconds|default(0)|tojson }};
+const startTime = Date.now();
+const daysEl = document.getElementById('days');
+const hoursEl = document.getElementById('hours');
+const minutesEl = document.getElementById('minutes');
+const secondsEl = document.getElementById('seconds');
+const totalEffectiveHoursEl = document.getElementById('total-effective-hours');
+const EFFECTIVE_HOURS_PER_DAY = 14;
+const SECONDS_IN_EFFECTIVE_DAY = EFFECTIVE_HOURS_PER_DAY * 3600;
+
+function updateCountdown() {
+    const elapsedTimeInSeconds = Math.round((Date.now() - startTime) / 1000);
+    let totalEffectiveSeconds = initialTotalEffectiveSeconds - elapsedTimeInSeconds;
+    if (totalEffectiveSeconds < 0) totalEffectiveSeconds = 0;
+    let remainingSeconds = totalEffectiveSeconds;
+    const days = Math.floor(remainingSeconds / SECONDS_IN_EFFECTIVE_DAY);
+    remainingSeconds %= SECONDS_IN_EFFECTIVE_DAY;
+    const hours = Math.floor(remainingSeconds / 3600);
+    remainingSeconds %= 3600;
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = Math.floor(remainingSeconds % 60);
+    daysEl.textContent = days;
+    hoursEl.textContent = String(hours).padStart(2, '0');
+    minutesEl.textContent = String(minutes).padStart(2, '0');
+    secondsEl.textContent = String(seconds).padStart(2, '0');
+    const currentTotalHours = (totalEffectiveSeconds / 3600).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    totalEffectiveHoursEl.textContent = currentTotalHours.replace(/,/g, '');
+    if (totalEffectiveSeconds <= 0) clearInterval(countdownInterval);
+}
+const countdownInterval = setInterval(updateCountdown, 1000);
+updateCountdown();
+
+// --- NEW/UPDATED: Study Timer Logic ---
+
+const subjectInput = document.getElementById('subject-input');
+const startBtn = document.getElementById('start-btn');
+const stopBtn = document.getElementById('stop-btn');
+const startControls = document.getElementById('start-controls');
+const stopControls = document.getElementById('stop-controls');
+const currentSessionDisplay = document.getElementById('current-session-display');
+const currentSubjectEl = document.getElementById('current-subject');
+const sessionTimerEl = document.getElementById('session-timer');
+
+let sessionInterval = null;
+let isTimerRunning = false;
+{# Render active session data safely: avoid using tojson on objects that may contain datetimes #}
+{% if active_session_data %}
+let activeSessionData = {
+    subject: {{ active_session_data.subject|tojson }},
+    start_time_utc: {{ active_session_data.start_time_utc|string|tojson }}
+};
+{% else %}
+let activeSessionData = null;
+{% endif %}
+
+function formatTime(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+}
+
+function startUiTimer(subject, startTimeUtc) {
+    const sessionStartTime = new Date(startTimeUtc);
+    currentSubjectEl.textContent = subject;
+    startControls.classList.add('hidden');
+    stopControls.classList.remove('hidden');
+    currentSessionDisplay.classList.remove('hidden');
+    isTimerRunning = true;
+
+    if (sessionInterval) clearInterval(sessionInterval);
+    sessionInterval = setInterval(() => {
+        const elapsedSeconds = Math.round((Date.now() - sessionStartTime.getTime()) / 1000);
+        sessionTimerEl.textContent = formatTime(elapsedSeconds);
+    }, 1000);
+}
+
+startBtn.addEventListener('click', async () => {
+    const subject = subjectInput.value.trim();
+    if (!subject) {
+        alert('请输入学习科目！');
+        return;
+    }
+
+    const response = await fetch("{{ url_for('routes.start_session') }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: subject })
+    });
+    
+    if (response.ok) {
+        const data = await response.json();
+        startUiTimer(data.session.subject, data.session.start_time_utc);
+    } else {
+        let errText = '';
+        try {
+            const errData = await response.json();
+            errText = errData.error || JSON.stringify(errData);
+        } catch (e) {
+            try {
+                errText = await response.text();
+            } catch (e2) {
+                errText = response.status + ' ' + response.statusText;
+            }
+        }
+        alert('启动失败: ' + errText);
+    }
+});
+
+stopBtn.addEventListener('click', async () => {
+    const response = await fetch("{{ url_for('routes.stop_session') }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (response.ok) {
+        clearInterval(sessionInterval);
+        isTimerRunning = false;
+        subjectInput.value = '';
+        startControls.classList.remove('hidden');
+        stopControls.classList.add('hidden');
+        currentSessionDisplay.classList.add('hidden');
+        alert('学习会话已保存！');
+        activeSessionData = null;
+    } else {
+        let errText = '';
+        try {
+            const errData = await response.json();
+            errText = errData.error || JSON.stringify(errData);
+        } catch (e) {
+            try {
+                errText = await response.text();
+            } catch (e2) {
+                errText = response.status + ' ' + response.statusText;
+            }
+        }
+        alert('结束失败: ' + errText + '（请刷新页面重试）');
+    }
+});
+
+// NEW: Warn user on page exit if timer is running
+window.addEventListener('beforeunload', (event) => {
+    if (isTimerRunning) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+});
+
+// NEW: Check for active session on page load
+document.addEventListener('DOMContentLoaded', () => {
+    if (activeSessionData) {
+        startUiTimer(activeSessionData.subject, activeSessionData.start_time_utc);
+    }
+});
+</script>
+{% endblock %}

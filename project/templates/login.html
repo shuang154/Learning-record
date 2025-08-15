@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700">
+    <h1 class="text-3xl font-bold text-center text-white mb-6">用户登录</h1>
+    <form action="" method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="space-y-6">
+            <div>
+                <label for="{{ form.username.id }}" class="block text-sm font-medium text-gray-300">{{ form.username.label }}</label>
+                {{ form.username(class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-cyan-500 focus:border-cyan-500") }}
+            </div>
+            <div>
+                <label for="{{ form.password.id }}" class="block text-sm font-medium text-gray-300">{{ form.password.label }}</label>
+                {{ form.password(class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-cyan-500 focus:border-cyan-500") }}
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    {{ form.remember_me(class="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-500 rounded") }}
+                    <label for="{{ form.remember_me.id }}" class="ml-2 block text-sm text-gray-300">{{ form.remember_me.label }}</label>
+                </div>
+            </div>
+            <div>
+                {{ form.submit(class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-cyan-500 cursor-pointer") }}
+            </div>
+        </div>
+    </form>
+    <p class="mt-6 text-center text-sm text-gray-400">
+        还没有账户? <a href="{{ url_for('routes.register') }}" class="font-medium text-cyan-400 hover:text-cyan-300">点此注册</a>
+    </p>
+</div>
+{% endblock %}
