@@ -18,10 +18,10 @@
                 <div class="flex items-center">
                     <a href="{{ url_for('routes.index') }}" class="font-bold text-xl text-cyan-400">学习倒计时</a>
                 </div>
-                <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-4">
                     {% if current_user.is_authenticated %}
                         <a href="{{ url_for('routes.index') }}" class="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700">主页</a>
-                        <a href="{{ url_for('routes.history') }}" class="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700">今日历史</a>
+                        <a href="{{ url_for('routes.history') }}" class="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700">学习记录</a>
                         <span class="text-gray-400">你好, {{ current_user.username }}!</span>
                         <a href="{{ url_for('routes.logout') }}" class="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700">登出</a>
                     {% else %}
@@ -29,6 +29,26 @@
                         <a href="{{ url_for('routes.register') }}" class="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700">注册</a>
                     {% endif %}
                 </div>
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="md:hidden hidden" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('routes.index') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700">主页</a>
+                    <a href="{{ url_for('routes.history') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700">学习记录</a>
+                    <a href="{{ url_for('routes.logout') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700">登出</a>
+                    <span class="block px-3 py-2 text-base font-medium text-gray-400">你好, {{ current_user.username }}!</span>
+                {% else %}
+                    <a href="{{ url_for('routes.login') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700">登录</a>
+                    <a href="{{ url_for('routes.register') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700">注册</a>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -38,21 +58,31 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
                 {% for category, message in messages %}
-      {# 根据 category 动态设置背景色 #}
-      {% set bg_color = 'bg-cyan-500' %} {# 默认成功色 #}
-      {% if category == 'danger' %}
-        {% set bg_color = 'bg-amber-500' %} {# 危险/错误提示改为琥珀色 #}
-      {% elif category == 'info' %}
-        {% set bg_color = 'bg-blue-500' %} {# 信息提示用蓝色 #}
-      {% endif %}
-      <div class="{{ bg_color }} text-white p-4 rounded-lg mb-6" role="alert">
-        {{ message }}
-      </div>
+                  {% set bg_color = 'bg-cyan-500' %}
+                  {% if category == 'danger' %}
+                    {% set bg_color = 'bg-amber-500' %}
+                  {% elif category == 'info' %}
+                    {% set bg_color = 'bg-blue-500' %}
+                  {% endif %}
+                  <div class="{{ bg_color }} text-white p-4 rounded-lg mb-6" role="alert">
+                    {{ message }}
+                  </div>
                 {% endfor %}
               {% endif %}
             {% endwith %}
-            {% block content %}{% endblock %}
+            <div id="content">
+                {% block content %}{% endblock %}
+            </div>
         </div>
     </main>
+
+    <script>
+        // 汉堡菜单JS
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+    </script>
 </body>
 </html>

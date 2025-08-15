@@ -96,23 +96,57 @@ const totalEffectiveHoursEl = document.getElementById('total-effective-hours');
 const EFFECTIVE_HOURS_PER_DAY = 14;
 const SECONDS_IN_EFFECTIVE_DAY = EFFECTIVE_HOURS_PER_DAY * 3600;
 function updateCountdown() {
+    // --- 核心计算 (这部分保持不变) ---
+    // 1. 计算从页面加载到现在的总流逝时间
     const elapsedTimeInSeconds = Math.round((Date.now() - serverLoadTime) / 1000);
+    // 2. 用服务器给的初始值减去流逝时间，得到当前精确的总剩余有效秒数
     let totalEffectiveSeconds = initialTotalEffectiveSeconds - elapsedTimeInSeconds;
     if (totalEffectiveSeconds < 0) totalEffectiveSeconds = 0;
-    let remainingSeconds = totalEffectiveSeconds;
-    const days = Math.floor(remainingSeconds / SECONDS_IN_EFFECTIVE_DAY);
-    remainingSeconds %= SECONDS_IN_EFFECTIVE_DAY;
-    const hours = Math.floor(remainingSeconds / 3600);
-    remainingSeconds %= 3600;
-    const minutes = Math.floor(remainingSeconds / 60);
-    const seconds = Math.floor(remainingSeconds % 60);
+
+    // --- 逻辑分离 (这是新的修改) ---
+    
+    // 1. “天数”和“总有效时长”的计算和显示【始终】进行
+    const days = Math.floor(totalEffectiveSeconds / SECONDS_IN_EFFECTIVE_DAY);
     daysEl.textContent = days;
-    hoursEl.textContent = String(hours).padStart(2, '0');
-    minutesEl.textContent = String(minutes).padStart(2, '0');
-    secondsEl.textContent = String(seconds).padStart(2, '0');
+    
     const currentTotalHours = (totalEffectiveSeconds / 3600).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     totalEffectiveHoursEl.textContent = currentTotalHours.replace(/,/g, '');
-    if (totalEffectiveSeconds <= 0) clearInterval(countdownInterval);
+
+    // 2. “时、分、秒”的计算和显示【按条件】进行
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    if (currentHour >= 8 && currentHour < 22) {
+        // --- 在有效时间内 ---
+        // 计算当天剩余的有效秒数
+        const remainingSecondsAfterDays = totalEffectiveSeconds % SECONDS_IN_EFFECTIVE_DAY;
+        
+        // 从当天剩余秒数中换算出 时、分、秒
+        const hours = Math.floor(remainingSecondsAfterDays / 3600);
+        const minutes = Math.floor((remainingSecondsAfterDays % 3600) / 60);
+        const seconds = Math.floor(remainingSecondsAfterDays % 60);
+
+        // 更新显示
+        hoursEl.textContent = String(hours).padStart(2, '0');
+        minutesEl.textContent = String(minutes).padStart(2, '0');
+        secondsEl.textContent = String(seconds).padStart(2, '0');
+    } else {
+        // --- 在有效时间外 ---
+        // 将 时、分、秒 归零显示
+        hoursEl.textContent = '00';
+        minutesEl.textContent = '00';
+        secondsEl.textContent = '00';
+    }
+
+    // 检查倒计时是否已结束
+    if (totalEffectiveSeconds <= 0) {
+        clearInterval(countdownInterval);
+        // 确保最终所有都显示为0
+        daysEl.textContent = '0';
+        hoursEl.textContent = '00';
+        minutesEl.textContent = '00';
+        secondsEl.textContent = '00';
+    }
 }
 const countdownInterval = setInterval(updateCountdown, 1000);
 updateCountdown();

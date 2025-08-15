@@ -1,67 +1,62 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-white">今日学习记录 ({{ today.strftime('%Y-%m-%d') }})</h1>
-        <div class="space-x-2">
-            <button id="modify-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition">修改选中</button>
-            <button id="delete-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition">删除选中</button>
-        </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700">
+    <div class="border-b border-gray-700 mb-6">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <button id="tab-today" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-cyan-500 text-cyan-400">
+                今日
+            </button>
+            <button id="tab-total" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">
+                总计
+            </button>
+        </nav>
     </div>
-    
-    {% if sessions %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-700">
-                <thead class="bg-gray-700">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                           <input type="checkbox" id="select-all-checkbox" class="h-4 w-4 rounded border-gray-500 text-cyan-600 focus:ring-cyan-500">
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">科目</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">开始时间</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">结束时间</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">学习时长</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-gray-800 divide-y divide-gray-700">
-                    {% for session in sessions %}
-                    <tr class="hover:bg-gray-700/50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="checkbox" class="session-checkbox h-4 w-4 rounded border-gray-500 text-cyan-600 focus:ring-cyan-500" value="{{ session.id }}" data-duration-seconds="{{ session.accumulated_seconds if session.accumulated_seconds is not none else '0' }}">
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ session.subject.name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 tabular-nums-font">{{ session.creation_time.strftime('%H:%M:%S') }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 tabular-nums-font">{{ session.end_time.strftime('%H:%M:%S') if session.end_time else '进行中...' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 tabular-nums-font">
-                            {{ session.accumulated_seconds | duration }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+    <div id="panel-today">
+        <h2 class="text-2xl font-bold text-white mb-4">今日学习分布</h2>
+        <div class="max-w-md mx-auto mb-8 relative">
+            <canvas id="today-chart"></canvas>
+            <div id="today-chart-placeholder" class="hidden text-center text-gray-400 p-8">今日暂无学习记录</div>
         </div>
-    {% else %}
-        <p class="text-gray-400">今天还没有学习记录，快去开始学习吧！</p>
-    {% endif %}
+        <div id="details-today">
+            </div>
+    </div>
+
+    <div id="panel-total" class="hidden">
+        <h2 class="text-2xl font-bold text-white mb-4">学习记录总计</h2>
+        <div class="flex flex-col md:flex-row items-center md:items-end gap-4 bg-gray-700/50 p-4 rounded-lg mb-6">
+            <div class="flex-grow w-full">
+                <label for="start-date" class="text-sm text-gray-400">开始日期</label>
+                <input type="date" id="start-date" class="w-full bg-gray-700 border-gray-600 rounded-md py-2 px-3 text-white mt-1">
+            </div>
+            <div class="flex-grow w-full">
+                <label for="end-date" class="text-sm text-gray-400">结束日期</label>
+                <input type="date" id="end-date" class="w-full bg-gray-700 border-gray-600 rounded-md py-2 px-3 text-white mt-1">
+            </div>
+            <div class="flex space-x-2 w-full md:w-auto">
+                <button id="filter-btn" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg h-10 w-full whitespace-nowrap">查询</button>
+                <button id="show-all-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg h-10 w-full whitespace-nowrap">显示全部</button>
+            </div>
+        </div>
+        <div class="max-w-md mx-auto mb-8 relative">
+            <canvas id="total-chart"></canvas>
+            <div id="total-chart-placeholder" class="hidden text-center text-gray-400 p-8">该时间段内无学习记录</div>
+        </div>
+        <div id="details-total">
+            </div>
+    </div>
 </div>
 
 <div id="modify-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
     <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-sm border border-gray-700">
         <h3 class="text-xl font-bold text-white mb-4">修改学习时长</h3>
         <div class="flex items-center space-x-2">
-            <div class="flex-1">
-                <label for="new-duration-hours" class="block text-sm font-medium text-gray-300">时</label>
-                <input type="number" id="new-duration-hours" min="0" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-cyan-500 focus:border-cyan-500" placeholder="h">
-            </div>
-            <div class="flex-1">
-                <label for="new-duration-minutes" class="block text-sm font-medium text-gray-300">分</label>
-                <input type="number" id="new-duration-minutes" min="0" max="59" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-cyan-500 focus:border-cyan-500" placeholder="m">
-            </div>
-            <div class="flex-1">
-                <label for="new-duration-seconds" class="block text-sm font-medium text-gray-300">秒</label>
-                <input type="number" id="new-duration-seconds" min="0" max="59" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-cyan-500 focus:border-cyan-500" placeholder="s">
-            </div>
+            <div class="flex-1"><label for="new-duration-hours" class="block text-sm font-medium text-gray-300">时</label><input type="number" id="new-duration-hours" min="0" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white" placeholder="h"></div>
+            <div class="flex-1"><label for="new-duration-minutes" class="block text-sm font-medium text-gray-300">分</label><input type="number" id="new-duration-minutes" min="0" max="59" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white" placeholder="m"></div>
+            <div class="flex-1"><label for="new-duration-seconds" class="block text-sm font-medium text-gray-300">秒</label><input type="number" id="new-duration-seconds" min="0" max="59" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white" placeholder="s"></div>
         </div>
         <div class="mt-6 flex justify-end space-x-3">
             <button id="cancel-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition">取消</button>
@@ -70,106 +65,330 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- 按钮和Checkbox的获取 (无变化) ---
-    const deleteBtn = document.getElementById('delete-btn');
-    const modifyBtn = document.getElementById('modify-btn');
-    const selectAllCheckbox = document.getElementById('select-all-checkbox');
-    const sessionCheckboxes = document.querySelectorAll('.session-checkbox');
-    
-    // --- 弹窗元素获取 (已更新) ---
-    const modal = document.getElementById('modify-modal');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const saveChangesBtn = document.getElementById('save-changes-btn');
-    const hoursInput = document.getElementById('new-duration-hours');
-    const minutesInput = document.getElementById('new-duration-minutes');
-    const secondsInput = document.getElementById('new-duration-seconds');
 
-    // --- 全选/删除逻辑 (无变化) ---
-    selectAllCheckbox.addEventListener('change', (e) => {
-        sessionCheckboxes.forEach(checkbox => { checkbox.checked = e.target.checked; });
+<script>
+// 新增：用于在图表中心绘制文本的Chart.js插件
+const centerTextPlugin = {
+    id: 'centerText',
+    afterDraw: (chart) => {
+        if (chart.config.options.plugins.centerText.display) {
+            const ctx = chart.ctx;
+            const centerConfig = chart.config.options.plugins.centerText;
+            const fontStyle = centerConfig.fontStyle || 'Arial';
+            const color = centerConfig.color || '#d1d5db';
+            const maxFontSize = centerConfig.maxFontSize || 75;
+            const minFontSize = centerConfig.minFontSize || 20;
+            
+            ctx.save();
+            
+            // 计算字体大小，使其不超过图表内圆大小的40%
+            let fontSize = (chart.innerRadius / 2.5);
+            if (fontSize < minFontSize) fontSize = minFontSize;
+            if (fontSize > maxFontSize) fontSize = maxFontSize;
+            
+            ctx.font = `bold ${fontSize}px ${fontStyle}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+
+            const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+            const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+
+            ctx.fillText(centerConfig.text, centerX, centerY);
+            ctx.restore();
+        }
+    }
+};
+
+// 新增：专门用于图表中心显示的总时长格式化函数 (例如 "10h 23m")
+const formatTotalDurationForCenter = (seconds) => {
+    if (seconds === null || seconds === undefined || seconds === 0) return "0m";
+    seconds = parseInt(seconds, 10);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (parts.length === 0 && seconds > 0) { // 如果总时长小于1分钟，则显示秒
+        parts.push(`${seconds}s`);
+    }
+    return parts.join(' ');
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    // --- 全局变量和DOM获取 ---
+    let todayChartInstance = null;
+    let totalChartInstance = null;
+    const dom = {
+        tabs: { today: document.getElementById('tab-today'), total: document.getElementById('tab-total') },
+        panels: { today: document.getElementById('panel-today'), total: document.getElementById('panel-total') },
+        datePickers: { start: document.getElementById('start-date'), end: document.getElementById('end-date') },
+        filterBtn: document.getElementById('filter-btn'),
+        showAllBtn: document.getElementById('show-all-btn'),
+        modal: document.getElementById('modify-modal'),
+        cancelBtn: document.getElementById('cancel-btn'),
+        saveChangesBtn: document.getElementById('save-changes-btn'),
+        hoursInput: document.getElementById('new-duration-hours'),
+        minutesInput: document.getElementById('new-duration-minutes'),
+        secondsInput: document.getElementById('new-duration-seconds'),
+        content: document.getElementById('content'), // 使用修正后的base.html中的id
+    };
+
+    // --- 核心函数：获取并渲染数据 ---
+    const fetchAndRender = async (period, startDate, endDate) => {
+        const panelId = (period === 'today' || (!startDate && !endDate && period !== 'all')) ? 'today' : 'total';
+        const container = document.getElementById(`details-${panelId}`);
+        container.innerHTML = '<p class="text-gray-400">正在加载数据...</p>';
+
+        let url = new URL("{{ url_for('routes.get_study_data', _external=True) }}");
+        if (period) url.searchParams.append('period', period);
+        else if (startDate) {
+            url.searchParams.append('start_date', startDate);
+            if (endDate) url.searchParams.append('end_date', endDate);
+        }
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('获取数据失败');
+            const data = await response.json();
+            
+            renderChart(document.getElementById(`${panelId}-chart`), document.getElementById(`${panelId}-chart-placeholder`), data.chart_data, panelId);
+            renderTable(container, data.sessions);
+        } catch (error) {
+            container.innerHTML = `<p class="text-red-400">${error.message}</p>`;
+        }
+    };
+
+    // --- 渲染函数：图表和表格 ---
+    const renderChart = (canvas, placeholder, chartData, chartId) => {
+        let chartInstance = chartId === 'today' ? todayChartInstance : totalChartInstance;
+        if (chartInstance) chartInstance.destroy();
+        
+        if (!chartData || chartData.length === 0) {
+            canvas.style.display = 'none';
+            placeholder.style.display = 'block';
+            return;
+        }
+        canvas.style.display = 'block';
+        placeholder.style.display = 'none';
+
+        const labels = chartData.map(d => d.subject);
+        const data = chartData.map(d => d.duration);
+        
+        // 新增：计算总时长（秒）
+        const totalSeconds = data.reduce((sum, current) => sum + current, 0);
+        // 新增：格式化总时长文本
+        const centerText = formatTotalDurationForCenter(totalSeconds);
+
+        chartInstance = new Chart(canvas, {
+            type: 'doughnut',
+            data: { 
+                labels, 
+                datasets: [{ data, backgroundColor: ['#22d3ee', '#facc15', '#fb923c', '#4ade80', '#a78bfa', '#f472b6'], borderColor: '#1f2937', borderWidth: 4 }] 
+            },
+            // 新增：注册我们的自定义插件
+            plugins: [centerTextPlugin],
+            options: { 
+                responsive: true,
+                // 切掉空间的百分比
+                cutout: '52%',
+                plugins: { 
+                    legend: { position: 'top', labels: { color: '#d1d5db', font: { size: 14 } } },
+                    // 新增：为我们的插件传递文本内容
+                    centerText: {
+                        display: true,
+                        text: centerText
+                    }
+                } 
+            }
+        });
+
+        if (chartId === 'today') todayChartInstance = chartInstance;
+        else totalChartInstance = chartInstance;
+    };
+
+    const formatToLocalTime = (utcDateTimeStr) => {
+        if (!utcDateTimeStr || utcDateTimeStr === '进行中') {
+            return '进行中';
+        }
+        const date = new Date(utcDateTimeStr + 'Z'); // 加上'Z'确保JS正确解析为UTC时间
+        // toLocaleString() 会自动转换为浏览器所在的时区
+        return date.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+    };
+
+    const renderTable = (container, sessions) => {
+        if (!sessions || sessions.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        // 桌面端表格布局
+        const tableHTML = `
+            <div class="hidden md:block">
+                <div class="flex justify-end mb-2 space-x-2">
+                    <button data-action="modify" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition text-sm">修改选中</button>
+                    <button data-action="delete" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition text-sm">删除选中</button>
+                </div>
+                <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-gray-700"><tr>
+                        <th class="px-6 py-3"><input type="checkbox" class="h-4 w-4 rounded border-gray-500 text-cyan-600" data-action="select-all"></th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">科目</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">学习时长</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">开始时间</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">结束时间</th>
+                    </tr></thead>
+                <tbody class="bg-gray-800 divide-y divide-gray-700">${sessions.map(s => `
+                    <tr class="hover:bg-gray-700/50">
+                        <td class="px-6 py-4"><input type="checkbox" class="session-checkbox h-4 w-4 rounded" value="${s.id}" data-duration-seconds="${s.accumulated_seconds}"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${s.subject}</td>
+                        <td class="px-6 py-4 tabular-nums-font text-sm text-gray-300">${formatDuration(s.accumulated_seconds)}</td>
+                        <td class="px-6 py-4 tabular-nums-font text-sm text-gray-300">${formatToLocalTime(s.creation_time)}</td>
+                        <td class="px-6 py-4 tabular-nums-font text-sm text-gray-300">${formatToLocalTime(s.end_time)}</td>
+                    </tr>`).join('')}
+                </tbody>
+                    </table></div>
+            </div>`;
+
+        // 移动端卡片布局
+        const cardsHTML = `
+            <div class="md:hidden">
+                <div class="flex justify-end mb-4 space-x-2">
+                    <button data-action="modify" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition text-sm">修改选中</button>
+                    <button data-action="delete" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition text-sm">删除选中</button>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-gray-700/50 p-2 rounded-lg flex items-center">
+                        <input type="checkbox" data-action="select-all" class="h-4 w-4 rounded border-gray-500 text-cyan-600 mr-3">
+                        <label class="text-gray-300">全选</label>
+                    </div>
+                    ${sessions.map(s => `
+                    <div class="bg-gray-700/50 p-4 rounded-lg">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold text-white text-lg">${s.subject}</p>
+                                <p class="text-cyan-400 font-bold text-xl tabular-nums-font mt-1">${formatDuration(s.accumulated_seconds)}</p>
+                            </div>
+                            <input type="checkbox" class="session-checkbox h-5 w-5 rounded mt-1" value="${s.id}" data-duration-seconds="${s.accumulated_seconds}">
+                        </div>
+                        <div class="text-sm text-gray-400 mt-3 border-t border-gray-600 pt-3 tabular-nums-font">
+                            <p>开始: ${formatToLocalTime(s.creation_time)}</p>
+                            <p>结束: ${formatToLocalTime(s.end_time)}</p>
+                        </div>
+                    </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = tableHTML + cardsHTML;
+    };
+    
+    const formatDuration = (seconds) => {
+        if (seconds === null || seconds === undefined) return "-";
+        seconds = parseInt(seconds, 10);
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        const parts = [];
+        if (h > 0) parts.push(`${h}h`);
+        if (m > 0) parts.push(`${m}m`);
+        if (s > 0 || !parts.length) parts.push(`${s}s`);
+        return parts.join(' ');
+    };
+
+    // --- 事件监听 ---
+    dom.tabs.today.addEventListener('click', () => switchTab('today'));
+    dom.tabs.total.addEventListener('click', () => switchTab('total'));
+    
+    function switchTab(activeTab) {
+        Object.keys(dom.tabs).forEach(tabKey => {
+            const tab = dom.tabs[tabKey], panel = dom.panels[tabKey];
+            if (tabKey === activeTab) {
+                tab.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-cyan-500 text-cyan-400';
+                panel.classList.remove('hidden');
+            } else {
+                tab.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500';
+                panel.classList.add('hidden');
+            }
+        });
+        if (activeTab === 'total' && !totalChartInstance) fetchAndRender('all');
+    }
+
+    dom.filterBtn.addEventListener('click', () => {
+        const start = dom.datePickers.start.value, end = dom.datePickers.end.value;
+        if (!start) { alert('请选择开始日期。'); return; }
+        fetchAndRender(null, start, end);
     });
-    deleteBtn.addEventListener('click', async () => {
-        const selectedIds = Array.from(sessionCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
-        if (selectedIds.length === 0) { alert('请至少选择一条记录进行删除。'); return; }
-        if (confirm(`确定要删除选中的 ${selectedIds.length} 条记录吗？`)) {
-            try {
+
+    dom.showAllBtn.addEventListener('click', () => {
+        dom.datePickers.start.value = ''; dom.datePickers.end.value = '';
+        fetchAndRender('all');
+    });
+
+    // --- 修正：修改和删除的事件委托 (完整版) ---
+    dom.content.addEventListener('click', async (e) => {
+        const action = e.target.dataset.action;
+        if (!action) return;
+        
+        const tableContainer = e.target.closest('div[id^="details-"]');
+        if (!tableContainer) return;
+
+        const checkboxes = tableContainer.querySelectorAll('.session-checkbox');
+        
+        if (action === 'select-all') {
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+        } else if (action === 'modify') {
+            const selected = Array.from(checkboxes).filter(cb => cb.checked);
+            if (selected.length !== 1) { alert('请选择且仅选择一条记录进行修改。'); return; }
+            const cb = selected[0];
+            const totalSeconds = parseInt(cb.dataset.durationSeconds, 10);
+            dom.hoursInput.value = Math.floor(totalSeconds / 3600);
+            dom.minutesInput.value = Math.floor((totalSeconds % 3600) / 60);
+            dom.secondsInput.value = totalSeconds % 60;
+            dom.modal.dataset.sessionId = cb.value;
+            dom.modal.classList.remove('hidden');
+        } else if (action === 'delete') {
+            const selected = Array.from(checkboxes).filter(cb => cb.checked);
+            if (selected.length === 0) { alert('请至少选择一条记录进行删除。'); return; }
+            const ids = selected.map(cb => cb.value);
+            if (confirm(`确定要删除选中的 ${ids.length} 条记录吗？`)) {
                 const response = await fetch("{{ url_for('routes.delete_sessions') }}", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ session_ids: selectedIds })
+                    body: JSON.stringify({ session_ids: ids })
                 });
                 if (response.ok) {
                     alert('删除成功！');
-                    location.reload();
+                    location.reload(); // 简单起见直接重载页面
                 } else {
                     alert('删除失败: ' + ((await response.json()).error || '未知错误'));
                 }
-            } catch (err) {
-                alert('请求失败，请检查网络连接。');
             }
         }
     });
-
-    // --- 修改按钮点击逻辑 (已更新) ---
-    modifyBtn.addEventListener('click', () => {
-        const selectedCheckboxes = Array.from(sessionCheckboxes).filter(cb => cb.checked);
-        if (selectedCheckboxes.length !== 1) {
-            alert('请选择且仅选择一条记录进行修改。');
-            return;
-        }
-        
-        const checkbox = selectedCheckboxes[0];
-        const sessionId = checkbox.value;
-        const totalSeconds = parseInt(checkbox.dataset.durationSeconds, 10);
-
-        // 将总秒数分解为 h, m, s
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        // 填充到输入框
-        hoursInput.value = hours;
-        minutesInput.value = minutes;
-        secondsInput.value = seconds;
-        
-        modal.dataset.sessionId = sessionId;
-        modal.classList.remove('hidden');
-    });
-
-    // --- 关闭弹窗 (无变化) ---
-    cancelBtn.addEventListener('click', () => { modal.classList.add('hidden'); });
-
-    // --- 保存修改逻辑 (已更新) ---
-    saveChangesBtn.addEventListener('click', async () => {
-        const sessionId = modal.dataset.sessionId;
-        
-        // 从输入框读取 h, m, s 并计算总秒数
-        const h = parseInt(hoursInput.value, 10) || 0;
-        const m = parseInt(minutesInput.value, 10) || 0;
-        const s = parseInt(secondsInput.value, 10) || 0;
+    
+    dom.cancelBtn.addEventListener('click', () => dom.modal.classList.add('hidden'));
+    dom.saveChangesBtn.addEventListener('click', async () => {
+        const sessionId = dom.modal.dataset.sessionId;
+        const h = parseInt(dom.hoursInput.value, 10) || 0;
+        const m = parseInt(dom.minutesInput.value, 10) || 0;
+        const s = parseInt(dom.secondsInput.value, 10) || 0;
         const totalSeconds = (h * 3600) + (m * 60) + s;
-
-        if (!sessionId) return;
-        
-        try {
-            const response = await fetch(`/modify_session/${sessionId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                // 发送总秒数到后端
-                body: JSON.stringify({ duration_seconds: totalSeconds })
-            });
-            if (response.ok) {
-                alert('修改成功！');
-                location.reload();
-            } else {
-                alert('修改失败: ' + ((await response.json()).error || '未知错误'));
-            }
-        } catch (err) {
-            alert('请求失败，请检查网络连接。');
+        const response = await fetch(`/modify_session/${sessionId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ duration_seconds: totalSeconds })
+        });
+        if (response.ok) {
+            alert('修改成功！');
+            location.reload();
+        } else {
+            alert('修改失败: ' + ((await response.json()).error || '未知错误'));
         }
     });
+
+    // 初始化加载
+    fetchAndRender('today');
 });
 </script>
 {% endblock %}

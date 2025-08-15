@@ -1,14 +1,14 @@
 from flask import render_template, flash, redirect, url_for, request, jsonify, Blueprint
 from flask_login import login_user, logout_user, current_user, login_required
+from sqlalchemy import func
 from project import db
-from project.models import User, StudySession, Subject # 导入Subject
-import datetime
+from project.models import User, StudySession, Subject
 from project.forms import LoginForm, RegistrationForm
+import datetime
 
 bp = Blueprint('routes', __name__)
 
 # --- 用户认证路由 (无变化) ---
-# ... [此处省略 register, login, logout 函数] ...
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated: return redirect(url_for('routes.index'))
@@ -32,7 +32,10 @@ def login():
             flash('无效的用户名或密码', 'danger')
             return redirect(url_for('routes.login'))
         login_user(user, remember=form.remember_me.data)
-        return redirect(url_for('routes.index'))
+        next_page = request.args.get('next')
+        if not next_page or not next_page.startswith('/'):
+            next_page = url_for('routes.index')
+        return redirect(next_page)
     return render_template('login.html', title='登录', form=form)
 
 @bp.route('/logout')
@@ -40,7 +43,7 @@ def logout():
     logout_user()
     return redirect(url_for('routes.index'))
 
-# --- 主应用路由 ---
+# --- 主应用路由 (无变化) ---
 @bp.route('/')
 @login_required
 def index():
@@ -49,51 +52,89 @@ def index():
         StudySession.user_id == current_user.id,
         StudySession.status.in_(['active', 'paused'])
     ).first()
-    # 新增：获取用户的所有科目
     subjects = current_user.subjects.order_by(Subject.name).all()
-    return render_template(
-        'index.html',
-        total_seconds=total_seconds,
-        days=days, hours=hours, minutes=minutes, seconds=seconds,
-        total_effective_hours=total_effective_hours,
-        active_session_data=active_session.to_dict() if active_session else None,
-        subjects=[s.to_dict() for s in subjects] # 将科目列表传给模板
-    )
+    return render_template('index.html', total_seconds=total_seconds, days=days, hours=hours, minutes=minutes, seconds=seconds, total_effective_hours=total_effective_hours, active_session_data=active_session.to_dict() if active_session else None, subjects=[s.to_dict() for s in subjects])
 
+# --- 学习记录页面 (已更新) ---
 @bp.route('/history')
 @login_required
 def history():
-    today_start_utc = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end_utc = today_start_utc + datetime.timedelta(days=1)
-    sessions = StudySession.query.filter(
-        StudySession.user_id == current_user.id,
-        StudySession.creation_time >= today_start_utc,
-        StudySession.creation_time < today_end_utc
-    ).order_by(StudySession.creation_time.desc()).all()
-    return render_template('history.html', sessions=sessions, today=datetime.date.today())
+    # 这个路由现在只负责渲染页面框架，数据由JS通过API获取
+    return render_template('history.html', title="学习记录")
 
-# --- 学习会话 API (已更新) ---
+# --- 新增：获取学习数据的API ---
+@bp.route('/get_study_data')
+@login_required
+def get_study_data():
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    period = request.args.get('period') # 'today' or 'all'
+
+    base_query = StudySession.query.filter(StudySession.user_id == current_user.id)
+    
+    # 根据时间范围筛选会话
+    if period == 'today':
+        start_date_utc = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date_utc = start_date_utc + datetime.timedelta(days=1)
+        filtered_sessions_query = base_query.filter(StudySession.creation_time >= start_date_utc, StudySession.creation_time < end_date_utc)
+    elif start_date_str:
+        try:
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d')
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d') if end_date_str else start_date
+            start_date_utc = start_date
+            end_date_utc = end_date + datetime.timedelta(days=1)
+            filtered_sessions_query = base_query.filter(StudySession.creation_time >= start_date_utc, StudySession.creation_time < end_date_utc)
+        except ValueError:
+            return jsonify({'error': '日期格式无效'}), 400
+    else: # 'all' or no period specified
+        filtered_sessions_query = base_query
+
+    sessions = filtered_sessions_query.order_by(StudySession.creation_time.desc()).all()
+    
+    # 获取用于图表的聚合数据
+    chart_query = db.session.query(
+        Subject.name,
+        func.sum(StudySession.accumulated_seconds).label('total_seconds')
+    ).join(Subject).filter(
+        StudySession.user_id == current_user.id
+    )
+    # 确保聚合查询也应用相同的时间过滤器
+    if period == 'today' or start_date_str:
+         chart_query = chart_query.filter(StudySession.creation_time >= start_date_utc, StudySession.creation_time < end_date_utc)
+
+    chart_data = [{'subject': name, 'duration': total} for name, total in chart_query.group_by(Subject.name).all() if total and total > 0]
+    
+    # 格式化详细会话数据
+    detailed_sessions = [{
+        'id': s.id,
+        'subject': s.subject.name,
+        'creation_time': s.creation_time.strftime('%Y-%m-%d %H:%M:%S'),
+        'end_time': s.end_time.strftime('%Y-%m-%d %H:%M:%S') if s.end_time else '进行中',
+        'accumulated_seconds': s.accumulated_seconds
+    } for s in sessions]
+
+    return jsonify({
+        'chart_data': chart_data,
+        'sessions': detailed_sessions
+    })
+
+# --- 其他API路由和后台逻辑 (无变化) ---
 @bp.route('/start_session', methods=['POST'])
 @login_required
 def start_session():
     if StudySession.query.filter(StudySession.user_id == current_user.id, StudySession.status.in_(['active', 'paused'])).first():
         return jsonify({'error': '已有正在进行的学习会话'}), 400
     data = request.get_json()
-    subject_id = data.get('subject_id') # 修改：接收 subject_id
-    if not subject_id:
-        return jsonify({'error': '请选择一个科目'}), 400
-    
+    subject_id = data.get('subject_id')
+    if not subject_id: return jsonify({'error': '请选择一个科目'}), 400
     subject = Subject.query.filter_by(id=subject_id, user_id=current_user.id).first()
-    if not subject:
-        return jsonify({'error': '选择的科目无效'}), 404
-
+    if not subject: return jsonify({'error': '选择的科目无效'}), 404
     now = datetime.datetime.utcnow()
     new_session = StudySession(subject_id=subject.id, author=current_user, status='active', last_start_time=now)
     db.session.add(new_session)
     db.session.commit()
     return jsonify({'message': 'Session started', 'session': new_session.to_dict()}), 201
 
-# ... [此处省略 toggle_pause_session 和 stop_session 函数，它们无需修改] ...
 @bp.route('/toggle_pause_session', methods=['POST'])
 @login_required
 def toggle_pause_session():
@@ -126,7 +167,6 @@ def stop_session():
     db.session.commit()
     return jsonify({'message': 'Session stopped'}), 200
 
-# --- 新增：科目管理 API ---
 @bp.route('/subjects', methods=['GET'])
 @login_required
 def get_subjects():
@@ -138,11 +178,9 @@ def get_subjects():
 def add_subject():
     data = request.get_json()
     name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'error': '科目名称不能为空'}), 400
+    if not name: return jsonify({'error': '科目名称不能为空'}), 400
     if Subject.query.filter_by(user_id=current_user.id, name=name).first():
         return jsonify({'error': '该科目已存在'}), 400
-    
     new_subject = Subject(name=name, author=current_user)
     db.session.add(new_subject)
     db.session.commit()
@@ -152,15 +190,12 @@ def add_subject():
 @login_required
 def update_subject(subject_id):
     subject = Subject.query.get_or_404(subject_id)
-    if subject.user_id != current_user.id:
-        return jsonify({'error': '无权修改'}), 403
+    if subject.user_id != current_user.id: return jsonify({'error': '无权修改'}), 403
     data = request.get_json()
     name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'error': '科目名称不能为空'}), 400
+    if not name: return jsonify({'error': '科目名称不能为空'}), 400
     if name != subject.name and Subject.query.filter_by(user_id=current_user.id, name=name).first():
         return jsonify({'error': '该科目已存在'}), 400
-        
     subject.name = name
     db.session.commit()
     return jsonify(subject.to_dict())
@@ -169,17 +204,12 @@ def update_subject(subject_id):
 @login_required
 def delete_subject(subject_id):
     subject = Subject.query.get_or_404(subject_id)
-    if subject.user_id != current_user.id:
-        return jsonify({'error': '无权删除'}), 403
-    if subject.study_sessions.first():
-        return jsonify({'error': '该科目下已有学习记录，无法删除'}), 400
-
+    if subject.user_id != current_user.id: return jsonify({'error': '无权删除'}), 403
+    if subject.study_sessions.first(): return jsonify({'error': '该科目下已有学习记录，无法删除'}), 400
     db.session.delete(subject)
     db.session.commit()
     return jsonify({'message': '删除成功'})
 
-# --- 后台管理和倒计时逻辑 (无变化) ---
-# ... [此处省略 delete_sessions, modify_session, calculate_and_format_time 函数] ...
 @bp.route('/delete_sessions', methods=['POST'])
 @login_required
 def delete_sessions():
