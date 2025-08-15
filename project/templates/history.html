@@ -135,29 +135,47 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 核心函数：获取并渲染数据 ---
-    const fetchAndRender = async (period, startDate, endDate) => {
-        const panelId = (period === 'today' || (!startDate && !endDate && period !== 'all')) ? 'today' : 'total';
-        const container = document.getElementById(`details-${panelId}`);
-        container.innerHTML = '<p class="text-gray-400">正在加载数据...</p>';
+// in history.html (FINAL, ROBUST VERSION)
+const fetchAndRender = async (period, startDate, endDate) => {
+    const panelId = (period === 'today' || (!startDate && !endDate && period !== 'all')) ? 'today' : 'total';
+    const container = document.getElementById(`details-${panelId}`);
+    container.innerHTML = '<p class="text-gray-400">正在加载数据...</p>';
 
-        let url = new URL("{{ url_for('routes.get_study_data', _external=True) }}");
-        if (period) url.searchParams.append('period', period);
-        else if (startDate) {
-            url.searchParams.append('start_date', startDate);
-            if (endDate) url.searchParams.append('end_date', endDate);
-        }
+    let url = new URL("{{ url_for('routes.get_study_data', _external=True) }}");
 
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('获取数据失败');
-            const data = await response.json();
-            
-            renderChart(document.getElementById(`${panelId}-chart`), document.getElementById(`${panelId}-chart-placeholder`), data.chart_data, panelId);
-            renderTable(container, data.sessions);
-        } catch (error) {
-            container.innerHTML = `<p class="text-red-400">${error.message}</p>`;
-        }
-    };
+    if (period === 'today') {
+        // --- THIS IS THE FINAL FIX ---
+        // 1. 获取用户本地时区的“今天”的开始时间
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        // 2. 获取用户本地时区的“明天”的开始时间
+        const tomorrowStart = new Date(todayStart);
+        tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+
+        // 3. 将这两个本地时间转换为精确的UTC ISO字符串并发送给后端
+        url.searchParams.append('start_date_utc', todayStart.toISOString());
+        url.searchParams.append('end_date_utc', tomorrowStart.toISOString());
+
+    } else if (period === 'all') {
+        // "显示全部" 不需要日期参数
+    } else if (startDate) {
+        // "总计"中的日期筛选器仍然使用YYYY-MM-DD格式
+        url.searchParams.append('start_date', startDate);
+        if (endDate) url.searchParams.append('end_date', endDate);
+    }
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('获取数据失败');
+        const data = await response.json();
+
+        renderChart(document.getElementById(`${panelId}-chart`), document.getElementById(`${panelId}-chart-placeholder`), data.chart_data, panelId);
+        renderTable(container, data.sessions);
+    } catch (error) {
+        container.innerHTML = `<p class="text-red-400">${error.message}</p>`;
+    }
+};
 
     // --- 渲染函数：图表和表格 ---
     const renderChart = (canvas, placeholder, chartData, chartId) => {
@@ -300,19 +318,28 @@ document.addEventListener('DOMContentLoaded', () => {
     dom.tabs.today.addEventListener('click', () => switchTab('today'));
     dom.tabs.total.addEventListener('click', () => switchTab('total'));
     
-    function switchTab(activeTab) {
-        Object.keys(dom.tabs).forEach(tabKey => {
-            const tab = dom.tabs[tabKey], panel = dom.panels[tabKey];
-            if (tabKey === activeTab) {
-                tab.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-cyan-500 text-cyan-400';
-                panel.classList.remove('hidden');
-            } else {
-                tab.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500';
-                panel.classList.add('hidden');
-            }
-        });
-        if (activeTab === 'total' && !totalChartInstance) fetchAndRender('all');
+// in history.html (REVISED)
+function switchTab(activeTab) {
+    Object.keys(dom.tabs).forEach(tabKey => {
+        const tab = dom.tabs[tabKey], panel = dom.panels[tabKey];
+        if (tabKey === activeTab) {
+            tab.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-cyan-500 text-cyan-400';
+            panel.classList.remove('hidden');
+        } else {
+            tab.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500';
+            panel.classList.add('hidden');
+        }
+    });
+
+    // --- 这是需要添加和修改的逻辑 ---
+    if (activeTab === 'today') {
+        // 每次点击“今日”都重新获取数据
+        fetchAndRender('today'); 
+    } else if (activeTab === 'total' && !totalChartInstance) {
+        // 优化：只在“总计”面板第一次被激活时加载全部数据
+        fetchAndRender('all');
     }
+}
 
     dom.filterBtn.addEventListener('click', () => {
         const start = dom.datePickers.start.value, end = dom.datePickers.end.value;
