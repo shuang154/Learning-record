@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="w-full max-w-3xl mx-auto space-y-8">
-    <div class="text-center p-6 md:p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
-        <h1 class="text-lg md:text-2xl font-normal text-gray-400 mb-6">距离 2025年12月20日 还有</h1>
+<div class="w-full max-w-3xl mx-auto space-y-6">
+    <div class="text-center p-6 md:p-8 bg-gray-800/80 rounded-2xl shadow-2xl border border-gray-700">
+        <h1 class="text-lg md:text-2xl font-normal text-gray-400 mb-4">距离 2025年12月20日 还有</h1>
         <div>
-            <div class="text-center mb-6">
+            <div class="text-center mb-4">
                 <div class="flex justify-center items-baseline">
                     <p id="days" class="text-7xl md:text-9xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ days }}</p>
                     <p class="text-2xl md:text-4xl font-bold text-gray-200 ml-2 md:ml-3">天</p>
@@ -26,19 +26,19 @@
                 </div>
             </div>
         </div>
-        <div class="mt-8 pt-6 border-t border-gray-600">
+        <div class="mt-6 pt-4 border-t border-slate-600"> 
              <p class="text-base md:text-lg font-normal text-gray-400">最多有效学习时长</p>
-             <p class="text-3xl md:text-4xl font-bold text-white mt-2 tabular-nums-font"><span id="total-effective-hours">{{ total_effective_hours }}</span><span class="text-xl md:text-2xl font-normal text-gray-300">小时</span></p>
+             <p class="text-2xl md:text-3xl font-bold text-white mt-2 tabular-nums-font"><span id="total-effective-hours">{{ total_effective_hours }}</span><span class="text-xl md:text-2xl font-normal text-gray-300">小时</span></p>
         </div>
-        <p class="text-xs md:text-sm text-gray-500 mt-8">(按每日有效时间 08:00 - 22:00 计算)</p>
+        <p class="text-xs md:text-sm text-gray-500 mt-4">(按每日有效时间 08:00 - 22:00 计算)</p>
     </div>
 
-    <div class="text-center p-6 md:p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
-        <h2 class="text-2xl font-bold text-white mb-6">学习计时器</h2>
+    <div class="text-center p-6 md:p-8 bg-gray-800/80 rounded-2xl shadow-2xl border border-gray-700">
+        <h2 class="text-2xl font-bold text-white mb-4">学习计时器</h2>
 
         <div id="current-session-display" class="hidden mb-6 p-4 bg-gray-700 rounded-lg">
             <p class="text-gray-300">正在学习: <span id="current-subject" class="font-bold text-cyan-400"></span></p>
-            <p id="session-timer" class="text-4xl font-bold text-white tabular-nums-font mt-2">00:00:00</p>
+            <p id="session-timer" class="text-3xl font-bold text-white tabular-nums-font mt-2">00:00:00</p>
             <p id="session-status-text" class="text-sm text-yellow-400 mt-1"></p>
         </div>
 
@@ -237,38 +237,57 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const updateMainUI = () => {
-        if (activeSessionData) {
-            dom.startControls.classList.add('hidden');
-            dom.stopControls.classList.remove('hidden');
-            dom.currentSessionDisplay.classList.remove('hidden');
-            dom.currentSubject.textContent = activeSessionData.subject.name;
+// in index.html (After - FINAL VERSION)
+const updateMainUI = () => {
+    if (activeSessionData) {
+        dom.startControls.classList.add('hidden');
+        dom.stopControls.classList.remove('hidden');
+        dom.currentSessionDisplay.classList.remove('hidden');
+        dom.currentSubject.textContent = activeSessionData.subject.name;
+
+        if (activeSessionData.status === 'active') {
+            // --- 计时器活动状态 ---
+            dom.sessionStatusText.textContent = ''; // 确保状态文字为空
+            dom.pauseResumeBtn.textContent = '暂停';
             
-            if (activeSessionData.status === 'active') {
-                dom.sessionStatusText.textContent = '';
-                dom.pauseResumeBtn.textContent = '暂停';
-                const sessionStartTime = new Date(activeSessionData.last_start_time_utc);
-                const baseSeconds = activeSessionData.accumulated_seconds;
-                if (sessionInterval) clearInterval(sessionInterval);
-                sessionInterval = setInterval(() => {
-                    const elapsed = Math.round((Date.now() - sessionStartTime.getTime()) / 1000);
-                    dom.sessionTimer.textContent = formatTime(baseSeconds + elapsed);
-                }, 1000);
-            } else { // paused
-                clearInterval(sessionInterval);
-                dom.sessionTimer.textContent = formatTime(activeSessionData.accumulated_seconds);
-                dom.sessionStatusText.textContent = '已暂停';
-                dom.pauseResumeBtn.textContent = '继续';
-            }
-        } else {
+            // 关键：确保数字是白色
+            dom.sessionTimer.classList.remove('text-amber-400');
+            dom.sessionTimer.classList.add('text-white');
+
+            const sessionStartTime = new Date(activeSessionData.last_start_time_utc);
+            const baseSeconds = activeSessionData.accumulated_seconds;
+            if (sessionInterval) clearInterval(sessionInterval);
+            sessionInterval = setInterval(() => {
+                const elapsed = Math.round((Date.now() - sessionStartTime.getTime()) / 1000);
+                dom.sessionTimer.textContent = formatTime(baseSeconds + elapsed);
+            }, 1000);
+
+        } else { // paused
+            // --- 计时器暂停状态 (关键修改) ---
             clearInterval(sessionInterval);
-            dom.startControls.classList.remove('hidden');
-            dom.stopControls.classList.add('hidden');
-            dom.currentSessionDisplay.classList.add('hidden');
-            dom.selectedSubjectDisplay.textContent = selectedSubject ? selectedSubject.name : '无';
-            dom.startBtn.disabled = !selectedSubject;
+            dom.sessionTimer.textContent = formatTime(activeSessionData.accumulated_seconds);
+            
+            // 1. 去掉“已暂停”字样
+            dom.sessionStatusText.textContent = ''; 
+            
+            dom.pauseResumeBtn.textContent = '继续';
+
+            // 2. 将倒计时数字变为橙黄色
+            dom.sessionTimer.classList.remove('text-white');
+            dom.sessionTimer.classList.add('text-amber-400');
         }
-    };
+    } else {
+        clearInterval(sessionInterval);
+        dom.startControls.classList.remove('hidden');
+        dom.stopControls.classList.add('hidden');
+        dom.currentSessionDisplay.classList.add('hidden');
+        dom.selectedSubjectDisplay.textContent = selectedSubject ? selectedSubject.name : '无';
+        dom.startBtn.disabled = !selectedSubject;
+        // 确保计时器在会话结束后恢复为白色
+        dom.sessionTimer.classList.remove('text-amber-400');
+        dom.sessionTimer.classList.add('text-white');
+    }
+};
 
     // --- 事件处理函数 ---
     const fetchAndRenderSubjects = async () => {
@@ -333,14 +352,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    dom.pauseResumeBtn.addEventListener('click', async () => {
+// in index.html (FINAL & ROBUST VERSION)
+
+dom.pauseResumeBtn.addEventListener('click', async () => {
+    // 立即禁用按钮，防止重复点击
+    dom.pauseResumeBtn.disabled = true;
+
+    const isCurrentlyActive = activeSessionData.status === 'active';
+
+    if (isCurrentlyActive) {
+        // --- 暂停逻辑 (采用乐观更新) ---
+
+        // 1. **立即**在界面上更新为“已暂停”状态，不再等待服务器
+        clearInterval(sessionInterval); // 停止视觉计时器
+        sessionInterval = null;
+        dom.sessionStatusText.textContent = ''; // 移除“已暂停”字样
+        dom.pauseResumeBtn.textContent = '继续';
+        
+        // (这是上一轮的新增功能) 将数字颜色变为琥珀色
+        dom.sessionTimer.classList.remove('text-white');
+        dom.sessionTimer.classList.add('text-amber-400');
+
+        // 2. 在后台与服务器同步状态
         const result = await apiCall("{{ url_for('routes.toggle_pause_session') }}", 'POST');
         if (result) {
+            // 3. (关键!) 只更新内部数据，绝不调用 updateMainUI() 来覆盖界面
             activeSessionData = result.session;
-            updateMainUI();
+        } else {
+            // 如果失败，提示用户并刷新以恢复正确状态
+            alert('暂停失败，请刷新页面。');
+            location.reload();
         }
-    });
 
+    } else {
+        // --- 继续逻辑 (保持原有方式) ---
+
+        // 1. 乐观地更新界面文字和颜色
+        dom.sessionStatusText.textContent = '';
+        dom.pauseResumeBtn.textContent = '暂停';
+        dom.sessionTimer.classList.remove('text-amber-400');
+        dom.sessionTimer.classList.add('text-white');
+
+        // 2. 向服务器请求，获取新的开始时间
+        const result = await apiCall("{{ url_for('routes.toggle_pause_session') }}", 'POST');
+        if (result) {
+            // 3. (关键!) 更新内部数据，并**必须**调用 updateMainUI() 来启动新的计时器
+            activeSessionData = result.session;
+            updateMainUI(); 
+        } else {
+            alert('继续失败，请刷新页面。');
+            location.reload();
+        }
+    }
+
+    // 操作完成后，重新启用按钮
+    dom.pauseResumeBtn.disabled = false;
+});
     dom.stopBtn.addEventListener('click', async () => {
         if (!confirm('确定要结束本次学习吗？')) return;
         const result = await apiCall("{{ url_for('routes.stop_session') }}", 'POST');

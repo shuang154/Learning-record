@@ -1,0 +1,7 @@
+[2025-08-16 01:49:57 +0800] [95614] [INFO] Starting gunicorn 23.0.0
+[2025-08-16 01:49:57 +0800] [95614] [INFO] Listening at: http://0.0.0.0:5000 (95614)
+[2025-08-16 01:49:57 +0800] [95614] [INFO] Using worker: sync
+[2025-08-16 01:49:57 +0800] [95615] [INFO] Booting worker with pid: 95615
+[2025-08-16 01:51:09 +0800] [95614] [INFO] Handling signal: int
+[2025-08-16 01:51:09 +0800] [95615] [INFO] Worker exiting (pid: 95615)
+[2025-08-16 01:51:09 +0800] [95614] [INFO] Shutting down: Master

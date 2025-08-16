@@ -3,7 +3,9 @@
 __pycache__/
 *.sqlite3
 *.db
-
+project/static/images/*.jpg
+project/static/images/*.png
+project/static/images/*.gif
 
 
 git.txt
