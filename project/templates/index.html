@@ -254,32 +254,38 @@ const updateMainUI = () => {
 
         if (activeSessionData.status === 'active') {
             // --- 计时器活动状态 ---
-            dom.sessionStatusText.textContent = ''; // 确保状态文字为空
+            dom.sessionStatusText.textContent = ''; 
             dom.pauseResumeBtn.textContent = '暂停';
             
-            // 关键：确保数字是白色
             dom.sessionTimer.classList.remove('text-amber-400');
             dom.sessionTimer.classList.add('text-white');
 
-            const sessionStartTime = new Date(activeSessionData.last_start_time_utc);
-            const baseSeconds = activeSessionData.accumulated_seconds;
+            // --- BUG FIX STARTS HERE ---
+            // 1. Use the authoritative 'current_total_seconds' from the server.
+            //    This value is calculated at the time of the API response and is very close to 0
+            //    for a new session, effectively eliminating the network latency issue.
+            let secondsCounter = Math.round(activeSessionData.current_total_seconds);
+
+            // 2. Display the initial time immediately to prevent any UI flicker.
+            dom.sessionTimer.textContent = formatTime(secondsCounter);
+            
+            // 3. Start a simple and reliable client-side incrementer.
             if (sessionInterval) clearInterval(sessionInterval);
             sessionInterval = setInterval(() => {
-                const elapsed = Math.round((Date.now() - sessionStartTime.getTime()) / 1000);
-                dom.sessionTimer.textContent = formatTime(baseSeconds + elapsed);
+                secondsCounter++;
+                dom.sessionTimer.textContent = formatTime(secondsCounter);
             }, 1000);
+            // --- BUG FIX ENDS HERE ---
 
         } else { // paused
             // --- 计时器暂停状态 (关键修改) ---
             clearInterval(sessionInterval);
             dom.sessionTimer.textContent = formatTime(activeSessionData.accumulated_seconds);
             
-            // 1. 去掉“已暂停”字样
             dom.sessionStatusText.textContent = ''; 
             
             dom.pauseResumeBtn.textContent = '继续';
 
-            // 2. 将倒计时数字变为橙黄色
             dom.sessionTimer.classList.remove('text-white');
             dom.sessionTimer.classList.add('text-amber-400');
         }
@@ -290,7 +296,7 @@ const updateMainUI = () => {
         dom.currentSessionDisplay.classList.add('hidden');
         dom.selectedSubjectDisplay.textContent = selectedSubject ? selectedSubject.name : '无';
         dom.startBtn.disabled = !selectedSubject;
-        // 确保计时器在会话结束后恢复为白色
+        
         dom.sessionTimer.classList.remove('text-amber-400');
         dom.sessionTimer.classList.add('text-white');
     }

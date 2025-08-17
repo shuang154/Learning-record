@@ -5,3 +5,32 @@
 [2025-08-16 01:51:09 +0800] [95614] [INFO] Handling signal: int
 [2025-08-16 01:51:09 +0800] [95615] [INFO] Worker exiting (pid: 95615)
 [2025-08-16 01:51:09 +0800] [95614] [INFO] Shutting down: Master
+[2025-08-16 23:36:39 +0800] [124331] [INFO] Starting gunicorn 23.0.0
+[2025-08-16 23:36:39 +0800] [124331] [INFO] Listening at: http://0.0.0.0:5000 (124331)
+[2025-08-16 23:36:39 +0800] [124331] [INFO] Using worker: sync
+[2025-08-16 23:36:39 +0800] [124332] [INFO] Booting worker with pid: 124332
+[2025-08-16 23:44:54 +0800] [124331] [INFO] Handling signal: int
+[2025-08-16 23:44:54 +0800] [124332] [INFO] Worker exiting (pid: 124332)
+[2025-08-16 23:44:54 +0800] [124331] [INFO] Shutting down: Master
+[2025-08-16 23:46:20 +0800] [124502] [INFO] Starting gunicorn 23.0.0
+[2025-08-16 23:46:20 +0800] [124502] [INFO] Listening at: http://0.0.0.0:5000 (124502)
+[2025-08-16 23:46:20 +0800] [124502] [INFO] Using worker: sync
+[2025-08-16 23:46:20 +0800] [124503] [INFO] Booting worker with pid: 124503
+[2025-08-16 23:46:53 +0800] [124502] [INFO] Handling signal: int
+[2025-08-16 23:46:53 +0800] [124503] [INFO] Worker exiting (pid: 124503)
+[2025-08-16 23:46:53 +0800] [124502] [INFO] Shutting down: Master
+[2025-08-16 23:48:39 +0800] [124550] [INFO] Starting gunicorn 23.0.0
+[2025-08-16 23:48:39 +0800] [124550] [INFO] Listening at: http://0.0.0.0:5000 (124550)
+[2025-08-16 23:48:39 +0800] [124550] [INFO] Using worker: sync
+[2025-08-16 23:48:39 +0800] [124551] [INFO] Booting worker with pid: 124551
+[2025-08-17 02:45:01 +0800] [124550] [INFO] Handling signal: hup
+[2025-08-17 02:45:01 +0800] [124550] [INFO] Hang up: Master
+[2025-08-17 02:45:01 +0800] [124550] [ERROR] Worker (pid:124551) was sent SIGHUP!
+[2025-08-17 02:45:01 +0800] [124550] [INFO] Handling signal: hup
+[2025-08-17 02:45:01 +0800] [124550] [INFO] Hang up: Master
+[2025-08-17 02:45:01 +0800] [127275] [INFO] Booting worker with pid: 127275
+[2025-08-17 02:45:01 +0800] [127277] [INFO] Booting worker with pid: 127277
+[2025-08-17 02:45:02 +0800] [127275] [INFO] Worker exiting (pid: 127275)
+[2025-08-17 12:14:47 +0800] [124550] [INFO] Handling signal: term
+[2025-08-17 12:14:47 +0800] [127277] [INFO] Worker exiting (pid: 127277)
+[2025-08-17 12:14:47 +0800] [124550] [INFO] Shutting down: Master
