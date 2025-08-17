@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title or 'Timer' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -72,7 +74,7 @@
             </div>
         </div>
     </nav>
-
+    
     <main class="py-10">
         <div class="max-w-4xl mx-auto px-4">
             {% with messages = get_flashed_messages(with_categories=true) %}

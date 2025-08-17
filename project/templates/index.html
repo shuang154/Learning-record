@@ -2,9 +2,9 @@
 
 {% block content %}
 <div class="w-full max-w-3xl mx-auto space-y-6">
-    <div class="text-center p-6 md:p-8 bg-gray-800/80 rounded-2xl shadow-2xl border border-gray-700">
-        <h1 class="text-lg md:text-2xl font-normal text-gray-400 mb-4">距离 2025年12月20日 还有</h1>
-        <div>
+    <div id="countdown-wrapper" class="relative text-center p-6 md:p-8 bg-gray-800/80 rounded-2xl shadow-2xl border border-gray-700">
+        <h1 id="countdown-title" class="text-lg md:text-2xl font-normal text-gray-400 mb-4 transition-opacity duration-500 ease-in-out">距离 2025年12月20日 还有</h1>
+        <div id="countdown-elements" class="transition-opacity duration-500 ease-in-out">
             <div class="text-center mb-4">
                 <div class="flex justify-center items-baseline">
                     <p id="days" class="text-7xl md:text-9xl font-black tracking-tighter text-cyan-400 tabular-nums-font">{{ days }}</p>
@@ -25,24 +25,31 @@
                     <p class="text-xl md:text-3xl font-bold text-gray-400 ml-1 md:ml-2">秒</p>
                 </div>
             </div>
+            <div class="mt-6 pt-4 border-t border-slate-600"> 
+                 <p class="text-base md:text-lg font-normal text-gray-400">最多有效学习时长</p>
+                 <p class="text-2xl md:text-3xl font-bold text-white mt-2 tabular-nums-font"><span id="total-effective-hours">{{ total_effective_hours }}</span><span class="text-xl md:text-2xl font-normal text-gray-300">小时</span></p>
+            </div>
+            <p class="text-xs md:text-sm text-gray-500 mt-4">(按每日有效时间 08:00 - 22:00 计算)</p>
         </div>
-        <div class="mt-6 pt-4 border-t border-slate-600"> 
-             <p class="text-base md:text-lg font-normal text-gray-400">最多有效学习时长</p>
-             <p class="text-2xl md:text-3xl font-bold text-white mt-2 tabular-nums-font"><span id="total-effective-hours">{{ total_effective_hours }}</span><span class="text-xl md:text-2xl font-normal text-gray-300">小时</span></p>
+        
+        <div id="beijing-time-display" class="hidden absolute inset-0 flex items-center justify-center transition-opacity duration-500 ease-in-out">
+            <div class="text-center mb-4">
+                <p class="text-9xl font-black tracking-tighter text-cyan-400 tabular-nums-font" style="font-family: 'Comic Sans MS', cursive;">
+                </p>
+            </div>
         </div>
-        <p class="text-xs md:text-sm text-gray-500 mt-4">(按每日有效时间 08:00 - 22:00 计算)</p>
     </div>
 
-    <div class="text-center p-6 md:p-8 bg-gray-800/80 rounded-2xl shadow-2xl border border-gray-700">
+    <div id="timer-wrapper" class="text-center p-6 md:p-8 bg-gray-800/80 rounded-2xl shadow-2xl border border-gray-700 transition-all duration-500 ease-in-out">
         <div class="flex justify-center items-baseline mb-4">
-    <h2 class="text-2xl font-bold text-white">学习计时器</h2>
+    <h2 id="timer-title" class="text-2xl font-bold text-white transition-opacity duration-500 ease-in-out">学习计时器</h2>
     
     <a href="{{ url_for('routes.history') }}" class="md:hidden text-amber-400 hover:text-amber-300 text-sm font-medium ml-3 transition">
         查看记录 &rarr;
     </a>
 </div>
 
-        <div id="current-session-display" class="hidden mb-6 p-4 bg-gray-700/70 rounded-lg">
+        <div id="current-session-display" class="hidden mb-6 p-4 bg-gray-700/70 rounded-lg transition-all duration-500 ease-in-out">
             <p class="text-gray-300"> <span id="current-subject" class="font-bold text-cyan-400"></span></p>
             <p id="session-timer" class="text-3xl font-bold text-white tabular-nums-font mt-2">00:00:00</p>
             <p id="session-status-text" class="text-sm text-yellow-400 mt-1"></p>
@@ -165,9 +172,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeSessionData = {{ active_session_data | tojson }};
     let selectedSubject = null;
     let sessionInterval = null;
+    let beijingTimeInterval = null; // <--- 新增
+
+    const updateBeijingTime = () => {
+    const now = new Date();
+    const beijingTime = new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        hour: '2-digit',
+        minute: '2-digit',
+        // second: '2-digit',
+        hour12: false
+    }).format(now);
+    // 正确地将文本内容赋值给内部带有样式的 <p> 标签
+    dom.beijingTimeDisplay.querySelector('p').textContent = beijingTime;
+};
 
     // 获取所有DOM元素
     const dom = {
+        countdownWrapper: document.getElementById('countdown-wrapper'),
+        countdownElements: document.getElementById('countdown-elements'), // <--- 新增
+        countdownTitle: document.getElementById('countdown-title'), // <--- 新增
+        timerWrapper: document.getElementById('timer-wrapper'),
+        timerTitle: document.getElementById('timer-title'),             // <--- 新增
+        beijingTimeDisplay: document.getElementById('beijing-time-display'),
         startControls: document.getElementById('start-controls'),
         stopControls: document.getElementById('stop-controls'),
         currentSessionDisplay: document.getElementById('current-session-display'),
@@ -244,63 +271,95 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-// in index.html (After - FINAL VERSION)
+// ↓↓↓↓↓↓ 用这个最终、全新的函数完整替换旧的 updateMainUI 函数 ↓↓↓↓↓↓
 const updateMainUI = () => {
-    if (activeSessionData) {
+    // 定义需要动态切换的样式类 (sessionDisplayBgClasses 已在步骤1中被简化)
+    const countdownWrapperBgClasses = ['bg-gray-800/80', 'shadow-2xl', 'border'];
+    const timerWrapperBgClasses = ['bg-gray-800/80', 'shadow-2xl', 'border', 'border-gray-700'];
+    const sessionDisplayBgClasses = ['bg-gray-700/70']; // <-- 确保这里是简化后的版本
+
+    // --- 核心逻辑重构 ---
+    // 只有在"运行中"状态，才显示北京时间面板
+    if (activeSessionData && activeSessionData.status === 'active') {
+        // --- 状态：运行中 ---
+
+        // 1. 平滑过渡：倒计时面板 -> 北京时间
+        dom.countdownWrapper.classList.remove(...countdownWrapperBgClasses);
+        dom.countdownTitle.classList.add('opacity-0');
+        dom.countdownElements.classList.add('opacity-0');
+        dom.beijingTimeDisplay.classList.remove('hidden');
+        setTimeout(() => dom.beijingTimeDisplay.classList.remove('opacity-0'), 50);
+
+        // 2. 隐藏不必要的UI元素
+        dom.timerTitle.classList.add('opacity-0');
         dom.startControls.classList.add('hidden');
         dom.stopControls.classList.remove('hidden');
         dom.currentSessionDisplay.classList.remove('hidden');
         dom.currentSubject.textContent = activeSessionData.subject.name;
 
-        if (activeSessionData.status === 'active') {
-            // --- 计时器活动状态 ---
-            dom.sessionStatusText.textContent = ''; 
-            dom.pauseResumeBtn.textContent = '暂停';
-            
-            dom.sessionTimer.classList.remove('text-amber-400');
-            dom.sessionTimer.classList.add('text-white');
+        // 3. 移除计时器背景
+        dom.timerWrapper.classList.remove(...timerWrapperBgClasses);
+        dom.currentSessionDisplay.classList.remove(...sessionDisplayBgClasses);
 
-            // --- BUG FIX STARTS HERE ---
-            // 1. Use the authoritative 'current_total_seconds' from the server.
-            //    This value is calculated at the time of the API response and is very close to 0
-            //    for a new session, effectively eliminating the network latency issue.
-            let secondsCounter = Math.round(activeSessionData.current_total_seconds);
-
-            // 2. Display the initial time immediately to prevent any UI flicker.
-            dom.sessionTimer.textContent = formatTime(secondsCounter);
-            
-            // 3. Start a simple and reliable client-side incrementer.
-            if (sessionInterval) clearInterval(sessionInterval);
-            sessionInterval = setInterval(() => {
-                secondsCounter++;
-                dom.sessionTimer.textContent = formatTime(secondsCounter);
-            }, 1000);
-            // --- BUG FIX ENDS HERE ---
-
-        } else { // paused
-            // --- 计时器暂停状态 (关键修改) ---
-            clearInterval(sessionInterval);
-            dom.sessionTimer.textContent = formatTime(activeSessionData.accumulated_seconds);
-            
-            dom.sessionStatusText.textContent = ''; 
-            
-            dom.pauseResumeBtn.textContent = '继续';
-
-            dom.sessionTimer.classList.remove('text-white');
-            dom.sessionTimer.classList.add('text-amber-400');
-        }
-    } else {
-        clearInterval(sessionInterval);
-        dom.startControls.classList.remove('hidden');
-        dom.stopControls.classList.add('hidden');
-        dom.currentSessionDisplay.classList.add('hidden');
-        dom.selectedSubjectDisplay.textContent = selectedSubject ? selectedSubject.name : '无';
-        dom.startBtn.disabled = !selectedSubject;
-        
+        // 4. 更新按钮文字和颜色
+        dom.pauseResumeBtn.textContent = '暂停';
         dom.sessionTimer.classList.remove('text-amber-400');
         dom.sessionTimer.classList.add('text-white');
+
+        // 5. 启动北京时间和学习计时器
+        if (!beijingTimeInterval) {
+            updateBeijingTime();
+            beijingTimeInterval = setInterval(updateBeijingTime, 1000);
+        }
+        let secondsCounter = Math.round(activeSessionData.current_total_seconds);
+        dom.sessionTimer.textContent = formatTime(secondsCounter);
+        if (sessionInterval) clearInterval(sessionInterval);
+        sessionInterval = setInterval(() => {
+            secondsCounter++;
+            dom.sessionTimer.textContent = formatTime(secondsCounter);
+        }, 1000);
+
+    } else {
+        // --- 状态：未开始、已暂停 或 已结束 ---
+
+        // 1. 平滑过渡：北京时间 -> 倒计时面板
+        dom.countdownWrapper.classList.add(...countdownWrapperBgClasses);
+        dom.beijingTimeDisplay.classList.add('opacity-0');
+        setTimeout(() => dom.beijingTimeDisplay.classList.add('hidden'), 500);
+        dom.countdownTitle.classList.remove('opacity-0');
+        dom.countdownElements.classList.remove('opacity-0');
+
+        // 2. 停止北京时间
+        if (beijingTimeInterval) {
+            clearInterval(beijingTimeInterval);
+            beijingTimeInterval = null;
+        }
+        clearInterval(sessionInterval);
+
+        // 3. 恢复计时器面板的完整样式
+        dom.timerTitle.classList.remove('opacity-0');
+        dom.timerWrapper.classList.add(...timerWrapperBgClasses);
+        dom.currentSessionDisplay.classList.add(...sessionDisplayBgClasses);
+
+        if (activeSessionData) { // 专门处理"已暂停"状态
+            dom.startControls.classList.add('hidden');
+            dom.stopControls.classList.remove('hidden');
+            dom.currentSessionDisplay.classList.remove('hidden');
+            dom.currentSubject.textContent = activeSessionData.subject.name;
+            dom.sessionTimer.textContent = formatTime(activeSessionData.accumulated_seconds);
+            dom.pauseResumeBtn.textContent = '继续';
+            dom.sessionTimer.classList.remove('text-white');
+            dom.sessionTimer.classList.add('text-amber-400');
+        } else { // 处理"未开始"或"已结束"状态
+            dom.startControls.classList.remove('hidden');
+            dom.stopControls.classList.add('hidden');
+            dom.currentSessionDisplay.classList.add('hidden');
+            dom.selectedSubjectDisplay.textContent = selectedSubject ? selectedSubject.name : '无';
+            dom.startBtn.disabled = !selectedSubject;
+        }
     }
 };
+// ↑↑↑↑↑↑ 替换结束 ↑↑↑↑↑↑
 
     // --- 事件处理函数 ---
     const fetchAndRenderSubjects = async () => {
@@ -368,10 +427,17 @@ const updateMainUI = () => {
 // in index.html (FINAL & ROBUST VERSION)
 
 dom.pauseResumeBtn.addEventListener('click', async () => {
-    // 立即禁用按钮，防止重复点击
     dom.pauseResumeBtn.disabled = true;
 
-    const isCurrentlyActive = activeSessionData.status === 'active';
+    const result = await apiCall("{{ url_for('routes.toggle_pause_session') }}", 'POST');
+    if (result) {
+        activeSessionData = result.session;
+        updateMainUI();
+    } else {
+        alert('操作失败，请刷新页面。');
+    }
+
+    dom.pauseResumeBtn.disabled = false;
 
     if (isCurrentlyActive) {
         // --- 暂停逻辑 (采用乐观更新) ---
