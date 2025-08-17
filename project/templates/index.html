@@ -34,7 +34,7 @@
         
         <div id="beijing-time-display" class="hidden absolute inset-0 flex items-center justify-center transition-opacity duration-500 ease-in-out">
             <div class="text-center mb-4">
-                <p class="text-9xl font-black tracking-tighter text-cyan-400 tabular-nums-font" style="font-family: 'Comic Sans MS', cursive;">
+                <p class="text-9xl font-black tracking-tighter tabular-nums-font" style="font-family: 'Comic Sans MS', cursive; color: #22D3EE;">
                 </p>
             </div>
         </div>
@@ -189,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 获取所有DOM元素
     const dom = {
+        mainNavbar: document.getElementById('main-navbar'), // <--- 新增
         countdownWrapper: document.getElementById('countdown-wrapper'),
         countdownElements: document.getElementById('countdown-elements'), // <--- 新增
         countdownTitle: document.getElementById('countdown-title'), // <--- 新增
@@ -282,6 +283,7 @@ const updateMainUI = () => {
     // 只有在"运行中"状态，才显示北京时间面板
     if (activeSessionData && activeSessionData.status === 'active') {
         // --- 状态：运行中 ---
+        dom.mainNavbar.classList.add('-translate-y-full'); // <--- 新增：让导航栏向上滑出隐藏
 
         // 1. 平滑过渡：倒计时面板 -> 北京时间
         dom.countdownWrapper.classList.remove(...countdownWrapperBgClasses);
@@ -321,6 +323,7 @@ const updateMainUI = () => {
 
     } else {
         // --- 状态：未开始、已暂停 或 已结束 ---
+        dom.mainNavbar.classList.remove('-translate-y-full'); // <--- 新增：让导航栏向下滑入显示
 
         // 1. 平滑过渡：北京时间 -> 倒计时面板
         dom.countdownWrapper.classList.add(...countdownWrapperBgClasses);
